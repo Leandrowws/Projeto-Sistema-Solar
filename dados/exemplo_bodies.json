@@ -1,0 +1,130 @@
+{
+  "bodies": [
+    {
+      "id": "mercure",
+      "name": "Mercure",
+      "englishName": "Mercury",
+      "isPlanet": true,
+      "moons": null,
+      "semimajorAxis": 57909050,
+      "mass": {"massValue": 3.3011, "massExponent": 23},
+      "gravity": 3.7,
+      "meanRadius": 2439.4,
+      "avgTemp": 440,
+      "discoveredBy": "",
+      "discoveryDate": "",
+      "bodyType": "Planet"
+    },
+    {
+      "id": "venus",
+      "name": "Venus",
+      "englishName": "Venus",
+      "isPlanet": true,
+      "moons": null,
+      "semimajorAxis": 108208000,
+      "mass": {"massValue": 4.8675, "massExponent": 24},
+      "gravity": 8.87,
+      "meanRadius": 6051.8,
+      "avgTemp": 737,
+      "discoveredBy": "",
+      "discoveryDate": "",
+      "bodyType": "Planet"
+    },
+    {
+      "id": "terre",
+      "name": "La Terre",
+      "englishName": "Earth",
+      "isPlanet": true,
+      "moons": [{"moon": "Moon", "rel": "https://api.le-systeme-solaire.net/rest/bodies/lune"}],
+      "semimajorAxis": 149600000,
+      "mass": {"massValue": 5.9722, "massExponent": 24},
+      "gravity": 9.81,
+      "meanRadius": 6371.0,
+      "avgTemp": 288,
+      "discoveredBy": "",
+      "discoveryDate": "",
+      "bodyType": "Planet"
+    },
+    {
+      "id": "lune",
+      "name": "La Lune",
+      "englishName": "Moon",
+      "isPlanet": false,
+      "moons": null,
+      "semimajorAxis": 384400,
+      "mass": {"massValue": 7.346, "massExponent": 22},
+      "gravity": 1.62,
+      "meanRadius": 1737.0,
+      "avgTemp": 220,
+      "discoveredBy": "",
+      "discoveryDate": "",
+      "bodyType": "Moon"
+    },
+    {
+      "id": "mars",
+      "name": "Mars",
+      "englishName": "Mars",
+      "isPlanet": true,
+      "moons": [
+        {"moon": "Phobos", "rel": "https://api.le-systeme-solaire.net/rest/bodies/phobos"},
+        {"moon": "Deimos", "rel": "https://api.le-systeme-solaire.net/rest/bodies/deimos"}
+      ],
+      "semimajorAxis": 227939200,
+      "mass": {"massValue": 6.4171, "massExponent": 23},
+      "gravity": 3.72,
+      "meanRadius": 3389.5,
+      "avgTemp": 210,
+      "discoveredBy": "",
+      "discoveryDate": "",
+      "bodyType": "Planet"
+    },
+    {
+      "id": "ceres",
+      "name": "Ceres",
+      "englishName": "Ceres",
+      "isPlanet": false,
+      "moons": null,
+      "semimajorAxis": 413700000,
+      "mass": {"massValue": 9.1, "massExponent": 20},
+      "gravity": 0.27,
+      "meanRadius": 469.7,
+      "avgTemp": 168,
+      "discoveredBy": "Giuseppe Piazzi",
+      "discoveryDate": "01/01/1801",
+      "bodyType": "Dwarf Planet"
+    },
+    {
+      "id": "jupiter",
+      "name": "Jupiter",
+      "englishName": "Jupiter",
+      "isPlanet": true,
+      "moons": [
+        {"moon": "Io", "rel": "https://api.le-systeme-solaire.net/rest/bodies/io"},
+        {"moon": "Europa", "rel": "https://api.le-systeme-solaire.net/rest/bodies/europa"}
+      ],
+      "semimajorAxis": 778500000,
+      "mass": {"massValue": 1.8982, "massExponent": 27},
+      "gravity": 24.79,
+      "meanRadius": 69911,
+      "avgTemp": 165,
+      "discoveredBy": "",
+      "discoveryDate": "",
+      "bodyType": "Planet"
+    },
+    {
+      "id": "pluton",
+      "name": "Pluton",
+      "englishName": "Pluto",
+      "isPlanet": false,
+      "moons": [{"moon": "Charon", "rel": "https://api.le-systeme-solaire.net/rest/bodies/charon"}],
+      "semimajorAxis": 5906440000,
+      "mass": {"massValue": 1.303, "massExponent": 22},
+      "gravity": 0.62,
+      "meanRadius": 1188.3,
+      "avgTemp": 44,
+      "discoveredBy": "Clyde Tombaugh",
+      "discoveryDate": "18/02/1930",
+      "bodyType": "Dwarf Planet"
+    }
+  ]
+}
