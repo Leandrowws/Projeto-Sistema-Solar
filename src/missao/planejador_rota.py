@@ -1,11 +1,13 @@
 """
 ESTRATEGIA GULOSA (rota): partindo da posicao atual, dentre os corpos
-ainda nao visitados, A FRENTE (nunca voltamos, para nao gastar autonomia
-em vao) e alcancaveis com um unico tanque cheio (distancia do trecho <=
-autonomia), escolhe o proximo destino que maximiza a razao
-potencial_cientifico / distancia_do_trecho. Viaja ate la, consome um
-tanque, e repete a partir da nova posicao. Para quando nenhum destino
-restante e alcancavel com um tanque ou quando os tanques acabam.
+ainda nao visitados, A FRENTE (nunca voltamos, para nao gastar combustivel
+em vao) e alcancaveis com o combustivel restante, escolhe o proximo destino que maximiza a razao
+potencial_cientifico / custo_do_passo, onde
+    custo_do_passo = distancia_do_trecho + custo_fixo_de_parada.
+Viaja ate la, desconta o custo do passo do combustivel e repete a partir
+da nova posicao. Como toda parada tem custo fixo, parar em corpos de baixo
+potencial deixa de ser gratis. Para quando nenhum destino restante e
+alcancavel (custo do passo > combustivel restante) ou o combustivel zera.
 """
 
 import math
@@ -15,6 +17,7 @@ from typing import List, Optional, Tuple
 from src.modelos.corpo_celeste import CorpoCeleste
 
 DENSIDADE_REFERENCIA_KG_M3 = 5514.0   # densidade media da Terra
+FATOR_MILHOES_KM = 1_000_000          # entrada do combustivel em milhoes de km
 
 def calcular_densidade_kg_m3(corpo: CorpoCeleste) -> Optional[float]:
     """Densidade = massa / volume. Retorna None se faltar massa ou raio
@@ -45,14 +48,17 @@ class EtapaRota:
     distancia_percorrida_km: float   # tamanho deste trecho (desde a parada anterior)
     distancia_do_sol_km: float       # posicao da nave apos esta etapa
     potencial_cientifico: float
+    custo_passo_km: float            # trecho + custo fixo de parada
+    combustivel_restante_km: float   # combustivel que sobrou apos este passo
 
 @dataclass
 class ResultadoRota:
     rota: List[EtapaRota] = field(default_factory=list)
     nao_visitados: List[ParadaCandidata] = field(default_factory=list)
     descartados_sem_dados: List[CorpoCeleste] = field(default_factory=list)
-    autonomia_km: float = 0.0
-    quantidade_tanques: int = 0
+    custo_parada_km: float = 0.0
+    combustivel_inicial_km: float = 0.0
+    combustivel_restante_km: float = 0.0
     distancia_total_km: float = 0.0
     potencial_total: float = 0.0
 
@@ -80,26 +86,33 @@ def _construir_candidatos(corpos: List[CorpoCeleste]) -> Tuple[List[ParadaCandid
     candidatos.sort(key=lambda p: p.corpo.distancia_km)
     return candidatos, descartados_sem_dados
 
-def planejar_rota(corpos: List[CorpoCeleste], autonomia_km: float, quantidade_tanques: int) -> ResultadoRota:
+def planejar_rota(corpos: List[CorpoCeleste], combustivel_milhoes_km: float,
+                  custo_parada_milhoes_km: float = 0.0) -> ResultadoRota:
     """ESTRATEGIA GULOSA por potencial cientifico: razao
-    potencial_cientifico / distancia_do_trecho, respeitando:
-      - autonomia_km: distancia MAXIMA que a nave percorre com um tanque
-        cheio antes de ter que parar. Cada trecho e testado isoladamente
-        contra esse teto - a autonomia "reseta" a cada parada, nao ha
-        orcamento cumulativo.
-      - quantidade_tanques: numero maximo de paradas.
+    potencial_cientifico / custo_do_passo, respeitando:
+      - combustivel_milhoes_km: orcamento TOTAL de combustivel, expresso
+        como a distancia (em milhoes de km) que a nave consegue percorrer.
+      - custo_parada_milhoes_km: combustivel fixo gasto a CADA parada
+        (ex: entrar em orbita), na mesma unidade. Faz com que visitar um
+        corpo de baixo potencial tenha um custo real.
+    Cada passo consome: distancia_do_trecho + custo_parada. A missao termina
+    quando o combustivel restante nao cobre o passo ate nenhum corpo.
     """
-    autonomia_km *= 1000000
+    combustivel_inicial_km = combustivel_milhoes_km * FATOR_MILHOES_KM
+    custo_parada_km = custo_parada_milhoes_km * FATOR_MILHOES_KM
+    combustivel_restante_km = combustivel_inicial_km
+
     candidatos, descartados_sem_dados = _construir_candidatos(corpos)
 
     posicao_atual_km = 0.0  # o Sol
     visitados = set()
     rota: List[EtapaRota] = []
 
-    while len(rota) < quantidade_tanques:
+    while combustivel_restante_km > 0:
         melhor_indice = None
         melhor_razao = -1.0
         melhor_distancia_trecho = 0.0
+        melhor_custo_passo = 0.0
 
         for i, candidata in enumerate(candidatos):
             if i in visitados:
@@ -108,35 +121,55 @@ def planejar_rota(corpos: List[CorpoCeleste], autonomia_km: float, quantidade_ta
                 continue  # so avancamos para frente, nunca volta
 
             distancia_trecho = candidata.corpo.distancia_km - posicao_atual_km
-            if distancia_trecho > autonomia_km:
-                continue  # distancia maior que autonomia
+            custo_passo = distancia_trecho + custo_parada_km
+            if custo_passo > combustivel_restante_km:
+                continue  # combustivel restante nao cobre trecho + parada
 
-            razao = candidata.potencial_cientifico / distancia_trecho
+            razao = candidata.potencial_cientifico / custo_passo
             if razao > melhor_razao:
                 melhor_razao = razao
                 melhor_indice = i
                 melhor_distancia_trecho = distancia_trecho
+                melhor_custo_passo = custo_passo
 
         if melhor_indice is None:
-            break  # nenhum candidato alcancavel com um tanque a partir daqui
+            break  # nenhum candidato alcancavel com o combustivel restante
 
         escolhida = candidatos[melhor_indice]
         visitados.add(melhor_indice)
         posicao_atual_km = escolhida.corpo.distancia_km
+        combustivel_restante_km -= melhor_custo_passo
 
-        rota.append(EtapaRota(corpo=escolhida.corpo, distancia_percorrida_km=melhor_distancia_trecho, distancia_do_sol_km=posicao_atual_km, potencial_cientifico=escolhida.potencial_cientifico))
+        rota.append(EtapaRota(
+            corpo=escolhida.corpo,
+            distancia_percorrida_km=melhor_distancia_trecho,
+            distancia_do_sol_km=posicao_atual_km,
+            potencial_cientifico=escolhida.potencial_cientifico,
+            custo_passo_km=melhor_custo_passo,
+            combustivel_restante_km=combustivel_restante_km,
+        ))
 
     nao_visitados = [c for i, c in enumerate(candidatos) if i not in visitados]
     distancia_total_km = sum(e.distancia_percorrida_km for e in rota)
     potencial_total = sum(e.potencial_cientifico for e in rota)
 
-    return ResultadoRota(rota=rota, nao_visitados=nao_visitados, descartados_sem_dados=descartados_sem_dados, autonomia_km=autonomia_km, quantidade_tanques=quantidade_tanques, distancia_total_km=distancia_total_km, potencial_total=potencial_total)
+    return ResultadoRota(
+        rota=rota,
+        nao_visitados=nao_visitados,
+        descartados_sem_dados=descartados_sem_dados,
+        custo_parada_km=custo_parada_km,
+        combustivel_inicial_km=combustivel_inicial_km,
+        combustivel_restante_km=combustivel_restante_km,
+        distancia_total_km=distancia_total_km,
+        potencial_total=potencial_total,
+    )
 
 
 def imprimir_resultado(resultado: ResultadoRota) -> None:
-    print("\n=== Rota de Missao (Estrategia Gulosa: potencial cientifico | tanques + autonomia) ===")
-    print(f"Autonomia por tanque:        {resultado.autonomia_km:,.0f} km")
-    print(f"Quantidade de tanques:       {resultado.quantidade_tanques}")
+    print("\n=== Rota de Missao (Estrategia Gulosa: potencial cientifico | combustivel) ===")
+    print(f"Combustivel inicial:         {resultado.combustivel_inicial_km:,.0f} km")
+    print(f"Custo fixo por parada:       {resultado.custo_parada_km:,.0f} km")
+    print(f"Combustivel restante:        {resultado.combustivel_restante_km:,.0f} km")
     print(f"Paradas realizadas:          {len(resultado.rota)}")
     print(f"Distancia total percorrida:  {resultado.distancia_total_km:,.0f} km")
     print(f"Potencial cientifico total:  {resultado.potencial_total:,.1f}")
@@ -146,7 +179,9 @@ def imprimir_resultado(resultado: ResultadoRota) -> None:
         print("Nenhuma parada realizada.")
     for i, etapa in enumerate(resultado.rota, start=1):
         print(f"  {i}. {etapa.corpo.nome:10s} | trecho={etapa.distancia_percorrida_km:>14,.0f} km | "
-              f"posicao={etapa.distancia_do_sol_km:>14,.0f} km | potencial={etapa.potencial_cientifico:8.1f}")
+              f"posicao={etapa.distancia_do_sol_km:>14,.0f} km | potencial={etapa.potencial_cientifico:8.1f} | "
+              f"custo passo={etapa.custo_passo_km:>14,.0f} km | "
+              f"combustivel restante={etapa.combustivel_restante_km:>14,.0f} km")
 
     print("\n--- Nao visitados ---")
     if not resultado.nao_visitados:
