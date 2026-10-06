@@ -95,9 +95,12 @@ def main() -> None:
 
         elif opcao == "10":
             try:
-                tanques = int(input("Quantidade de Tanques de Combustível: ").strip())
-                autonomia = float(input("Distancia que a nave percorre antes de precisar parar (em milhoes de km): ").strip())
-                resultado = sistema.planejar_rota(tanques, autonomia)
+                combustivel = float(input("Combustivel total da nave (em milhoes de km): ").strip())
+                custo_parada = float(input("Custo fixo de combustivel por parada (em milhoes de km): ").strip())
+                if combustivel <= 0 or custo_parada < 0:
+                    print("Erro: combustivel deve ser > 0 e custo de parada >= 0.")
+                    continue
+                resultado = sistema.planejar_rota(combustivel, custo_parada)
                 imprimir_resultado(resultado)
             except ValueError:
                 print("Erro: informe um numero valido.")
