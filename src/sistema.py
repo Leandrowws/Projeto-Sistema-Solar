@@ -89,5 +89,6 @@ class SistemaMissoes:
     # ------------------------------------------------------------------
     # Planejamento guloso de rota
     # ------------------------------------------------------------------
-    def planejar_rota(self, tanques_combustivel: int, autonomia: float) -> ResultadoRota:
-        return _executar_planejamento_rota(self._tabela.todos_valores(), autonomia, tanques_combustivel)
+    def planejar_rota(self, combustivel_milhoes_km: float, custo_parada_milhoes_km: float = 0.0) -> ResultadoRota:
+        return _executar_planejamento_rota(self._tabela.todos_valores(), combustivel_milhoes_km, custo_parada_milhoes_km)
+
